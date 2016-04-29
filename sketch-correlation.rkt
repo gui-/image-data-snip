@@ -45,6 +45,7 @@
 ;         #'(define (name param ...) img body ...))]))
 
 
+#;
 (define-syntax (define/img stx)
   (syntax-case stx ()
     [(_ name val)
@@ -78,3 +79,37 @@
                                           body ...))))]
              [else
               #'(define (name param ...) img body ...)]))]))
+
+(define-syntax (define/img stx)
+  (syntax-case stx ()
+    [(_ name val)
+     #'(define name val)]
+    [(_ (name param ...) img body ...)
+     (let ((sp (syntax-property #'img 'args)))
+       (cond [(and sp (null? sp))
+              #`(define name (λ/point #,(map (lambda(x) `(,x 0.5 0.5))
+                                             (syntax-e
+                                              #'(param ...)))
+                                      img
+                                      body ...))]
+             [(and sp (not (null? sp)))
+              (with-syntax ([((param val1 val2) ...)
+                             #;(printf "got the args at compile-time: ~s\n" #'([arg val1 val2] ...))
+                             #;(printf "got the args at compile-time: ~s\n" #`#,(sort (syntax-e
+                                                                                       #'(([param val1 val2] ...)))
+                                                                                      symbol<?  #:key car))
+                             #;(printf "got the args at compile-time: ~s\n" #`#,(sort (syntax-e #'(param ...))
+                                                                                      (lambda (x y)
+                                                                                        (symbol<? (syntax-e x)
+                                                                                                  (syntax-e y)))))
+                             (map (lambda (param)
+                                    (let ((point (assoc (syntax-e param) sp)))
+                                      (if point
+                                          #`(#,param #,(cadr point) #,(caddr point))
+                                          #`(#,param 0.5 0.5))))
+                                  (syntax->list #'(param ...)))])
+                #`(define name (λ/point ([param val1 val2] ...)
+                                        img
+                                        body ...)))]
+                [else
+                 #'(define (name param ...) img body ...)]))]))
