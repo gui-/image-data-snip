@@ -11,7 +11,6 @@
     (inherit set-snipclass
              get-flags set-flags
              get-bitmap)
-    
     (define metadata (make-hash))
     
     (define/public (set-metadata md) (set! metadata md))
@@ -20,7 +19,7 @@
     (define arg-field #f)
     (define x-field #f)
     (define y-field #f)
-    (define h-orig #f)
+    (define img-expanded? #t)
     
     (define (setup-main-frame at-x at-y)
       (set! frame (new frame%
@@ -136,26 +135,23 @@
              (btm-h (send btm get-height))
              (px (real->decimal-string (/ x-coord btm-w) 2))
              (py (real->decimal-string (/ y-coord btm-h) 2)))
-        (when (and (send e button-down? 'left)
-                   (send e get-control-down))
-          (when admin         
-            (setup-main-frame (+ x-display (inexact->exact editorx))
-                              (+ y-display (inexact->exact editory)))
-            (setup-arg-field)
-            (setup-x-field px)
-            (setup-y-field py)
-            (setup-btn)
-            (unless (send frame is-shown?)
-              (send frame show #t))))
-        (when (and (send e button-down? 'left)
-                   (send e get-shift-down))
-          (when admin
-            (set! h-orig btm-h)
-            (resize btm-w 10)))
-        (when (and (send e button-down? 'right)
-                   (send e get-shift-down))
-          (when admin
-            (resize btm-w h-orig)))))
+        (when (and admin (send e button-down? 'right))          
+          (setup-main-frame (+ x-display (inexact->exact editorx))
+                            (+ y-display (inexact->exact editory)))
+          (setup-arg-field)
+          (setup-x-field px)
+          (setup-y-field py)
+          (setup-btn)
+          (unless (send frame is-shown?)
+            (send frame show #t)))
+        (when (and admin (send e button-down? 'left))
+          (if img-expanded?
+              (begin
+                (set! img-expanded? #f)
+                (set! btm-h 10))
+              (set! img-expanded? #t))
+          (resize btm-w btm-h))))
+    
     
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;;Operations on the metadata ;;;
